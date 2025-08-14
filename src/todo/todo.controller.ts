@@ -6,6 +6,7 @@ import {
   Param,
   ParseIntPipe,
   Patch,
+  Delete,
 } from '@nestjs/common';
 import { TodoService } from './todo.service';
 import { CreateTodoDto } from './dto/create-todo.dto';
@@ -47,5 +48,10 @@ export class TodoController {
   @Patch(':id/completed')
   markCompleted(@Param('id', ParseIntPipe) id: number): Todo {
     return this.todoService.markCompleted(id);
+  }
+
+  @Delete(':id')
+  remove(@Param('id', ParseIntPipe) id: number): Todo {
+    return this.todoService.remove(id);
   }
 }

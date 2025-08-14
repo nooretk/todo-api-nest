@@ -47,4 +47,13 @@ export class TodoService {
     }
     return todo;
   }
+
+  remove(id: number): Todo {
+    const index = this.todos.findIndex((todo) => todo.id === id);
+    if (index === -1) {
+      throw new NotFoundException(`Todo with id ${id} not found`);
+    }
+    const [deleted] = this.todos.splice(index, 1);
+    return deleted;
+  }
 }
