@@ -8,7 +8,7 @@ export class TodoService {
   private idSeq = 1;
 
   create(createTodoDto: CreateTodoDto): Todo {
-    const todo = new Todo(this.idSeq++, createTodoDto.text);
+    const todo = new Todo(this.idSeq++, createTodoDto.title);
     this.todos.push(todo);
     return todo;
   }
