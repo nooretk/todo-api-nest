@@ -6,5 +6,7 @@ export class Todo {
     public title: string,
     public createdAt: Date = new Date(),
     public status: Status = Status.PENDING,
+    public inProgressAt?: Date, // set when status changes to IN_PROGRESS
+    public completedAt?: Date, // set when status changes to COMPLETED
   ) {}
 }
