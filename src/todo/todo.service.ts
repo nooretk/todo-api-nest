@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { Todo } from './entities/todo.entity';
 import { Status } from './enums/todo-status.enum';
