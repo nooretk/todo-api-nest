@@ -30,18 +30,12 @@ export class TodoService {
 
   updateTitle(id: number, title: string): Todo {
     const todo = this.findOne(id);
-    if (!title.trim()) throw new BadRequestException('Title cannot be empty');
-    todo.title = title.trim();
+    todo.title = title;
     return todo;
   }
 
   markInProgress(id: number): Todo {
     const todo = this.findOne(id);
-    if (todo.status === Status.COMPLETED) {
-      throw new BadRequestException(
-        'Cannot move from Completed to in progress status',
-      );
-    }
     if (todo.status !== Status.IN_PROGRESS) {
       todo.status = Status.IN_PROGRESS;
       todo.inProgressAt = new Date();
