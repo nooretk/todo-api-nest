@@ -5,10 +5,12 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
 } from '@nestjs/common';
 import { TodoService } from './todo.service';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { Todo } from './entities/todo.entity';
+import { UpdateTitleDto } from './dto/update-title.dto';
 
 @Controller('todo')
 export class TodoController {
@@ -27,5 +29,23 @@ export class TodoController {
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number): Todo {
     return this.todoService.findOne(id);
+  }
+
+  @Patch(':id/title')
+  updateTitle(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateTitleDto,
+  ): Todo {
+    return this.todoService.updateTitle(id, dto.title);
+  }
+
+  @Patch(':id/in-progress')
+  markInProgress(@Param('id', ParseIntPipe) id: number): Todo {
+    return this.todoService.markInProgress(id);
+  }
+
+  @Patch(':id/completed')
+  markCompleted(@Param('id', ParseIntPipe) id: number): Todo {
+    return this.todoService.markCompleted(id);
   }
 }
