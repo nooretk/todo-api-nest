@@ -22,7 +22,7 @@ import { Todo } from './entities/todo.entity';
 import { UpdateTitleDto } from './dto/update-title.dto';
 
 @ApiTags('todos')
-@Controller('todo')
+@Controller('todos')
 export class TodoController {
   constructor(private readonly todoService: TodoService) {}
 
@@ -36,7 +36,7 @@ export class TodoController {
     type: Todo,
   })
   @ApiBody({ type: CreateTodoDto })
-  create(@Body() createTodoDto: CreateTodoDto): Todo {
+  async create(@Body() createTodoDto: CreateTodoDto): Promise<Todo> {
     return this.todoService.create(createTodoDto);
   }
 
@@ -49,7 +49,7 @@ export class TodoController {
     description: 'List of all todo items',
     type: [Todo],
   })
-  findAll(): Todo[] {
+  async findAll(): Promise<Todo[]> {
     return this.todoService.findAll();
   }
 
@@ -67,7 +67,7 @@ export class TodoController {
     description: 'The todo item',
     type: Todo,
   })
-  findOne(@Param('id', ParseIntPipe) id: number): Todo {
+  async findOne(@Param('id', ParseIntPipe) id: number): Promise<Todo> {
     return this.todoService.findOne(id);
   }
 
@@ -86,10 +86,10 @@ export class TodoController {
     description: 'The updated todo item',
     type: Todo,
   })
-  updateTitle(
+  async updateTitle(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateTitleDto,
-  ): Todo {
+  ): Promise<Todo> {
     return this.todoService.updateTitle(id, dto.title);
   }
 
@@ -107,7 +107,7 @@ export class TodoController {
     description: 'The updated todo item marked as in progress',
     type: Todo,
   })
-  markInProgress(@Param('id', ParseIntPipe) id: number): Todo {
+  async markInProgress(@Param('id', ParseIntPipe) id: number): Promise<Todo> {
     return this.todoService.markInProgress(id);
   }
 
@@ -125,7 +125,7 @@ export class TodoController {
     description: 'The updated todo item marked as completed',
     type: Todo,
   })
-  markCompleted(@Param('id', ParseIntPipe) id: number): Todo {
+  async markCompleted(@Param('id', ParseIntPipe) id: number): Promise<Todo> {
     return this.todoService.markCompleted(id);
   }
 
@@ -143,7 +143,7 @@ export class TodoController {
     description: 'The deleted todo item',
     type: Todo,
   })
-  remove(@Param('id', ParseIntPipe) id: number): Todo {
+  async remove(@Param('id', ParseIntPipe) id: number): Promise<Todo> {
     return this.todoService.remove(id);
   }
 }

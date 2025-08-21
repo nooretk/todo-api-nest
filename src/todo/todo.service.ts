@@ -1,59 +1,78 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateTodoDto } from './dto/create-todo.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Todo } from './entities/todo.entity';
 import { Status } from './enums/todo-status.enum';
+import { CreateTodoDto } from './dto/create-todo.dto';
 
 @Injectable()
 export class TodoService {
-  private readonly todos: Todo[] = [];
-  private idSeq = 1;
+  constructor(
+    @InjectRepository(Todo) private readonly repo: Repository<Todo>,
+  ) {}
 
-  create(createTodoDto: CreateTodoDto): Todo {
-    const todo = new Todo(this.idSeq++, createTodoDto.title);
-    this.todos.push(todo);
+  // CREATE
+  async create(dto: CreateTodoDto): Promise<Todo> {
+    const todo = this.repo.create({
+      title: dto.title,
+      status: Status.PENDING,
+      // createdAt is auto via @CreateDateColumn
+    });
+    return this.repo.save(todo);
+  }
+
+  // READ ALL
+  async findAll(): Promise<Todo[]> {
+    return this.repo.find({ order: { id: 'DESC' } });
+  }
+
+  // READ ONE (helper + public)
+  private async mustFind(id: number): Promise<Todo> {
+    const todo = await this.repo.findOne({ where: { id } });
+    if (!todo) throw new NotFoundException(`Todo ${id} not found`);
     return todo;
   }
 
-  findAll(): Todo[] {
-    return this.todos;
+  async findOne(id: number): Promise<Todo> {
+    return this.mustFind(id);
   }
 
-  findOne(id: number): Todo {
-    const todo = this.todos.find((todo) => todo.id === id);
-    if (!todo) throw new NotFoundException(`Todo with id: ${id} is not found`);
-    return todo;
-  }
-
-  updateTitle(id: number, title: string): Todo {
-    const todo = this.findOne(id);
+  // UPDATE TITLE
+  async updateTitle(id: number, title: string): Promise<Todo> {
+    const todo = await this.mustFind(id);
     todo.title = title;
-    return todo;
+    return this.repo.save(todo);
   }
 
-  markInProgress(id: number): Todo {
-    const todo = this.findOne(id);
+  // MARK IN PROGRESS
+  async markInProgress(id: number): Promise<Todo> {
+    const todo = await this.mustFind(id);
     if (todo.status !== Status.IN_PROGRESS) {
       todo.status = Status.IN_PROGRESS;
-      todo.inProgressAt = new Date();
+      if (!todo.inProgressAt) {
+        // makes sure you only set the timestamp once
+        todo.inProgressAt = new Date();
+      }
     }
-    return todo;
+    return this.repo.save(todo);
   }
 
-  markCompleted(id: number): Todo {
-    const todo = this.findOne(id);
+  // MARK COMPLETED
+  async markCompleted(id: number): Promise<Todo> {
+    const todo = await this.mustFind(id);
     if (todo.status !== Status.COMPLETED) {
       todo.status = Status.COMPLETED;
-      todo.completedAt = new Date();
+      if (!todo.completedAt) {
+        todo.completedAt = new Date();
+      }
     }
-    return todo;
+    return this.repo.save(todo);
   }
 
-  remove(id: number): Todo {
-    const index = this.todos.findIndex((todo) => todo.id === id);
-    if (index === -1) {
-      throw new NotFoundException(`Todo with id ${id} not found`);
-    }
-    const [deleted] = this.todos.splice(index, 1);
-    return deleted;
+  // DELETE
+  async remove(id: number): Promise<Todo> {
+    const todo = await this.mustFind(id);
+    await this.repo.remove(todo);
+    return todo;
   }
 }
