@@ -43,26 +43,14 @@ export class TodoService {
     todo.title = title;
     return this.repo.save(todo);
   }
-
-  // MARK IN PROGRESS
-  async markInProgress(id: number): Promise<Todo> {
+  // UPDATE STATUS
+  async updateStatus(id: number, status: Status): Promise<Todo> {
     const todo = await this.mustFind(id);
-    if (todo.status !== Status.IN_PROGRESS) {
-      todo.status = Status.IN_PROGRESS;
-      if (!todo.inProgressAt) {
-        // makes sure you only set the timestamp once
+    if (todo.status !== status) {
+      todo.status = status;
+      if (status === Status.IN_PROGRESS && !todo.inProgressAt) {
         todo.inProgressAt = new Date();
-      }
-    }
-    return this.repo.save(todo);
-  }
-
-  // MARK COMPLETED
-  async markCompleted(id: number): Promise<Todo> {
-    const todo = await this.mustFind(id);
-    if (todo.status !== Status.COMPLETED) {
-      todo.status = Status.COMPLETED;
-      if (!todo.completedAt) {
+      } else if (status === Status.COMPLETED && !todo.completedAt) {
         todo.completedAt = new Date();
       }
     }

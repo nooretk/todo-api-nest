@@ -20,6 +20,7 @@ import { TodoService } from './todo.service';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { Todo } from './entities/todo.entity';
 import { UpdateTitleDto } from './dto/update-title.dto';
+import { UpdateStatusDto } from './dto/update-status.dto';
 
 @ApiTags('todos')
 @Controller('todos')
@@ -93,40 +94,26 @@ export class TodoController {
     return this.todoService.updateTitle(id, dto.title);
   }
 
-  @Patch(':id/in-progress')
+  @Patch(':id/status')
   @ApiOperation({
-    summary: 'Mark todo as in progress',
-    description: 'Marks a specific todo item as in progress',
+    summary: 'Update todo status',
+    description: 'Updates the status of a specific todo item',
   })
   @ApiParam({
     name: 'id',
     description: 'The ID of the todo item',
     type: 'number',
   })
+  @ApiBody({ type: UpdateStatusDto })
   @ApiOkResponse({
-    description: 'The updated todo item marked as in progress',
+    description: 'The updated todo item',
     type: Todo,
   })
-  async markInProgress(@Param('id', ParseIntPipe) id: number): Promise<Todo> {
-    return this.todoService.markInProgress(id);
-  }
-
-  @Patch(':id/completed')
-  @ApiOperation({
-    summary: 'Mark todo as completed',
-    description: 'Marks a specific todo item as completed',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'The ID of the todo item',
-    type: 'number',
-  })
-  @ApiOkResponse({
-    description: 'The updated todo item marked as completed',
-    type: Todo,
-  })
-  async markCompleted(@Param('id', ParseIntPipe) id: number): Promise<Todo> {
-    return this.todoService.markCompleted(id);
+  async updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateStatusDto,
+  ): Promise<Todo> {
+    return this.todoService.updateStatus(id, dto.status);
   }
 
   @Delete(':id')
