@@ -1,59 +1,127 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateTodoDto } from './dto/create-todo.dto';
+import {
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
+  BadRequestException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, QueryFailedError, EntityNotFoundError } from 'typeorm';
 import { Todo } from './entities/todo.entity';
 import { Status } from './enums/todo-status.enum';
+import { CreateTodoDto } from './dto/create-todo.dto';
 
 @Injectable()
 export class TodoService {
-  private readonly todos: Todo[] = [];
-  private idSeq = 1;
+  constructor(
+    @InjectRepository(Todo) private readonly repo: Repository<Todo>,
+  ) {}
 
-  create(createTodoDto: CreateTodoDto): Todo {
-    const todo = new Todo(this.idSeq++, createTodoDto.title);
-    this.todos.push(todo);
-    return todo;
-  }
-
-  findAll(): Todo[] {
-    return this.todos;
-  }
-
-  findOne(id: number): Todo {
-    const todo = this.todos.find((todo) => todo.id === id);
-    if (!todo) throw new NotFoundException(`Todo with id: ${id} is not found`);
-    return todo;
-  }
-
-  updateTitle(id: number, title: string): Todo {
-    const todo = this.findOne(id);
-    todo.title = title;
-    return todo;
-  }
-
-  markInProgress(id: number): Todo {
-    const todo = this.findOne(id);
-    if (todo.status !== Status.IN_PROGRESS) {
-      todo.status = Status.IN_PROGRESS;
-      todo.inProgressAt = new Date();
+  /**
+   * Handle database exceptions and convert them to appropriate HTTP exceptions
+   */
+  private handleDatabaseError(error: any, operation: string): never {
+    // Handle TypeORM's EntityNotFoundError and convert to NotFoundException
+    if (error instanceof EntityNotFoundError) {
+      throw new NotFoundException(`Todo not found`);
     }
-    return todo;
+
+    if (error instanceof QueryFailedError) {
+      // Handle specific database constraint violations
+      if (error.message.includes('duplicate key value')) {
+        throw new BadRequestException('Todo with this data already exists');
+      }
+      if (error.message.includes('violates check constraint')) {
+        throw new BadRequestException('Invalid data provided');
+      }
+      if (error.message.includes('value too long')) {
+        throw new BadRequestException('Title exceeds maximum length');
+      }
+    }
+
+    // Handle connection and timeout errors
+    if (typeof error === 'object' && error !== null && 'code' in error) {
+      const errorWithCode = error as { code: string };
+      if (
+        errorWithCode.code === 'ECONNREFUSED' ||
+        errorWithCode.code === 'ETIMEDOUT'
+      ) {
+        throw new InternalServerErrorException('Database connection failed');
+      }
+    }
+
+    // Default error for any other database issues
+    throw new InternalServerErrorException(`Failed to ${operation}`);
   }
 
-  markCompleted(id: number): Todo {
-    const todo = this.findOne(id);
-    if (todo.status !== Status.COMPLETED) {
-      todo.status = Status.COMPLETED;
-      todo.completedAt = new Date();
+  // CREATE
+  async create(dto: CreateTodoDto): Promise<Todo> {
+    try {
+      const todo = this.repo.create({
+        title: dto.title,
+        status: Status.PENDING,
+        // createdAt is auto via @CreateDateColumn
+      });
+      return await this.repo.save(todo);
+    } catch (error) {
+      this.handleDatabaseError(error, 'create todo');
     }
-    return todo;
   }
 
-  remove(id: number): Todo {
-    const index = this.todos.findIndex((todo) => todo.id === id);
-    if (index === -1) {
-      throw new NotFoundException(`Todo with id ${id} not found`);
+  // READ ALL
+  async findAll(): Promise<Todo[]> {
+    try {
+      return await this.repo.find({ order: { id: 'DESC' } });
+    } catch (error) {
+      this.handleDatabaseError(error, 'fetch todos');
     }
-    const [deleted] = this.todos.splice(index, 1);
-    return deleted;
+  }
+
+  async findOne(id: number): Promise<Todo> {
+    try {
+      return await this.repo.findOneOrFail({ where: { id } });
+    } catch (error) {
+      this.handleDatabaseError(error, 'find todo');
+    }
+  }
+
+  // UPDATE TITLE
+  async updateTitle(id: number, title: string): Promise<Todo> {
+    try {
+      const todo = await this.repo.findOneOrFail({ where: { id } });
+      todo.title = title;
+      return await this.repo.save(todo);
+    } catch (error) {
+      this.handleDatabaseError(error, 'update todo title');
+    }
+  }
+
+  // UPDATE STATUS
+  async updateStatus(id: number, status: Status): Promise<Todo> {
+    try {
+      const todo = await this.repo.findOneOrFail({ where: { id } });
+      if (todo.status !== status) {
+        todo.status = status;
+        if (status === Status.IN_PROGRESS && !todo.inProgressAt) {
+          todo.inProgressAt = new Date();
+        } else if (status === Status.COMPLETED && !todo.completedAt) {
+          todo.completedAt = new Date();
+        }
+        return await this.repo.save(todo);
+      }
+      return todo; // Return unchanged todo if status is the same
+    } catch (error) {
+      this.handleDatabaseError(error, 'update todo status');
+    }
+  }
+
+  // DELETE
+  async remove(id: number): Promise<Todo> {
+    try {
+      const todo = await this.repo.findOneOrFail({ where: { id } });
+      await this.repo.remove(todo);
+      return todo;
+    } catch (error) {
+      this.handleDatabaseError(error, 'delete todo');
+    }
   }
 }
