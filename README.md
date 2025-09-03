@@ -2,12 +2,13 @@
 
 # Todo API - NestJS
 
-A RESTful API for managing todo items built with NestJS, featuring comprehensive Swagger documentation and validation.
+A RESTful API for managing todo items built with NestJS, leveraging PostgreSQL for data persistence, TypeORM for database management, and featuring comprehensive Swagger documentation and validation.
 
 ## 🚀 Features
 
 - **CRUD Operations**: Create, read, update, and delete todo items
 - **Status Management**: Track todo progress (Pending → In Progress → Completed)
+- **Database Persistence**: PostgreSQL database with TypeORM migrations
 - **Input Validation**: Built-in validation using class-validator
 - **API Documentation**: Interactive Swagger/OpenAPI documentation
 - **TypeScript**: Full type safety and modern development experience
@@ -16,6 +17,7 @@ A RESTful API for managing todo items built with NestJS, featuring comprehensive
 
 - **Framework**: NestJS 11.x
 - **Language**: TypeScript
+- **Database**: PostgreSQL with TypeORM
 - **Validation**: class-validator & class-transformer
 - **Documentation**: Swagger/OpenAPI
 - **Runtime**: Node.js
@@ -30,8 +32,35 @@ A RESTful API for managing todo items built with NestJS, featuring comprehensive
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
+   ```
+
+3. **Database Setup**
+
+   Make sure you have PostgreSQL installed and running on your system.
+
+   ```bash
+   # Create database and user (run this once)
+   psql -U postgres -f docs/db-setup.sql
+   ```
+
+4. **Environment Configuration**
+
+   Create a `.env` file in the root directory:
+
+   ```env
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_USER=todo_user
+   DB_PASS=todo_pass
+   DB_NAME=todo_db
+   ```
+
+5. **Run Database Migrations**
+   ```bash
+   npm run m:run
    ```
 
 ## 🚀 Running the Application
@@ -40,6 +69,29 @@ A RESTful API for managing todo items built with NestJS, featuring comprehensive
 
 ```bash
 npm run start:dev
+```
+
+### Production Mode
+
+```bash
+npm run build
+npm run start:prod
+```
+
+### Other Useful Commands
+
+```bash
+# Format code
+npm run format
+
+# Lint code
+npm run lint
+
+# Run tests
+npm run test
+
+# Run tests with coverage
+npm run test:cov
 ```
 
 The API will be available at `http://localhost:3000`
@@ -101,6 +153,45 @@ All endpoints are prefixed with `/api`
 }
 ```
 
+### Update Status DTO
+
+```typescript
+{
+  "status": "PENDING" | "IN_PROGRESS" | "COMPLETED" // required
+}
+```
+
+## 🗄️ Database
+
+This project uses PostgreSQL with TypeORM for data persistence.
+
+### Database Schema
+
+- **Table**: `todos`
+- **Columns**:
+  - `id` (SERIAL PRIMARY KEY)
+  - `title` (VARCHAR(120) NOT NULL, indexed)
+  - `createdAt` (TIMESTAMPTZ NOT NULL DEFAULT now())
+  - `status` (ENUM: 'PENDING', 'IN_PROGRESS', 'COMPLETED', indexed)
+  - `inProgressAt` (TIMESTAMPTZ NULL)
+  - `completedAt` (TIMESTAMPTZ NULL)
+
+### Migration Commands
+
+```bash
+# Generate a new migration
+npm run m:g -- src/migrations/MigrationName
+
+# Create a blank migration
+npm run m:c -- src/migrations/MigrationName
+
+# Run pending migrations
+npm run m:run
+
+# Revert the last migration
+npm run m:revert
+```
+
 ## 📁 Project Structure
 
 ```
@@ -109,10 +200,13 @@ src/
 ├── app.module.ts          # Root module
 ├── app.service.ts         # Application service
 ├── main.ts               # Application entry point
+├── migrations/           # Database migrations
+│   └── 1755787000007-create-todos-table.ts
 └── todo/
     ├── dto/
     │   ├── create-todo.dto.ts    # DTO for creating todos
-    │   └── update-title.dto.ts   # DTO for updating title
+    │   ├── update-title.dto.ts   # DTO for updating title
+    │   └── update-status.dto.ts  # DTO for updating status
     ├── entities/
     │   └── todo.entity.ts        # Todo entity definition
     ├── enums/
@@ -134,9 +228,11 @@ The API includes comprehensive error handling:
 
 ## 📌 Notes
 
-- This API uses in-memory storage for simplicity.
-- For production, you should use a proper database like MongoDB or PostgreSQL.
-- Add authentication for securing endpoints in the future.
+- This API uses PostgreSQL for data persistence with TypeORM for database management.
+- Database migrations are used to manage schema changes.
+- Environment variables are used for database configuration.
+- Add authentication for securing endpoints in production.
+- Consider implementing soft deletes for better data management.
 
 ---
 
