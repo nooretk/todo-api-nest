@@ -13,8 +13,8 @@ const dataSource = new DataSource({
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
 
-  entities: ['/../**/*.entity.ts'],
-  migrations: ['/../**/migrations/*.ts'],
+  entities: ['./**/*.entity.ts'],
+  migrations: ['./**/migrations/*.ts'],
 
   synchronize: false,
 });
